@@ -1,2 +1,5 @@
+/docs/*
+!/docs/.gitkeep
 /data/*
-/docs
+!/data/.gitkeep
+!/data/README.md
