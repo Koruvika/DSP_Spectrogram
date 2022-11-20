@@ -119,10 +119,10 @@ def silence_discrimination(signal, sampling_rate, st_win=0.020, st_step=0.020):
     seg_limits = segment_limits(st_energy[:], ste_threshold, st_step,
                                 round(np.float64(len(signal)) / (st_win * sampling_rate)))
     # Remove very small segments:
-    min_duration = 0.3
-    seg_limits_2 = []
-    for s_lim in seg_limits:
-        if s_lim[1] - s_lim[0] > min_duration:
-            seg_limits_2.append(s_lim)
-    seg_limits = seg_limits_2
+    # min_duration = 0.15
+    # seg_limits_2 = []
+    # for s_lim in seg_limits:
+    #     if s_lim[1] - s_lim[0] > min_duration:
+    #         seg_limits_2.append(s_lim)
+    # seg_limits = seg_limits_2
     return seg_limits

@@ -10,14 +10,20 @@ import thinkdsp
 import os
 
 
-def get_center_vowel(wave):
+def get_center_vowel(wave, file):
     n, a = 9, 1
     b = [1.0 / n] * n
     yy = sig.lfilter(b, a, wave.ys)
     seg_limits = silence_discrimination(yy, wave.framerate, 0.020, 0.020)
-    length_center = seg_limits[1][0] - seg_limits[0][1]
-    start = seg_limits[1][0] + length_center/3
-    end = seg_limits[1][0] + 2*length_center/3
+
+    length_center = seg_limits[-1][0] - seg_limits[0][1]
+    start = seg_limits[0][1] + length_center/3
+    end = seg_limits[0][1] + 2*length_center/3
+    # if len(seg_limits) != 2:
+    #     print(file)
+    #     print(seg_limits)
+    #     print(length_center)
+    #     print(start, end)
     return start, end
 
 
@@ -46,13 +52,7 @@ def get_fft_of_segment_audio(segment_audio, fs, n_size=512):
     return feature
 
 
-if __name__ == "__main__":
-    # wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-    # fs, audio = read("../data/01MDA/a.wav")
-    # start, end = get_center_vowel(wave)
-    # segment_audio = get_segment_audio(audio, fs, start, end)
-    # feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
-
+def save_fft_of_train_data():
     vowel_files = []
 
     folders = os.listdir("../data")[1:-1]
@@ -69,49 +69,49 @@ if __name__ == "__main__":
 
     a_ffts = []
     for file in a_files:
-        wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-        fs, audio = read("../data/01MDA/a.wav")
-        start, end = get_center_vowel(wave)
+        wave = thinkdsp.read_wave(filename=file)
+        fs, audio = read(file)
+        start, end = get_center_vowel(wave, file)
         segment_audio = get_segment_audio(audio, fs, start, end)
         feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
         a_ffts.append(feature)
     a_fft = np.mean(a_ffts, axis=0)
 
     u_ffts = []
-    for file in a_files:
-        wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-        fs, audio = read("../data/01MDA/a.wav")
-        start, end = get_center_vowel(wave)
+    for file in u_files:
+        wave = thinkdsp.read_wave(filename=file)
+        fs, audio = read(file)
+        start, end = get_center_vowel(wave, file)
         segment_audio = get_segment_audio(audio, fs, start, end)
         feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
         u_ffts.append(feature)
     u_fft = np.mean(u_ffts, axis=0)
 
     e_ffts = []
-    for file in a_files:
-        wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-        fs, audio = read("../data/01MDA/a.wav")
-        start, end = get_center_vowel(wave)
+    for file in e_files:
+        wave = thinkdsp.read_wave(filename=file)
+        fs, audio = read(file)
+        start, end = get_center_vowel(wave, file)
         segment_audio = get_segment_audio(audio, fs, start, end)
         feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
         e_ffts.append(feature)
     e_fft = np.mean(e_ffts, axis=0)
 
     o_ffts = []
-    for file in a_files:
-        wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-        fs, audio = read("../data/01MDA/a.wav")
-        start, end = get_center_vowel(wave)
+    for file in o_files:
+        wave = thinkdsp.read_wave(filename=file)
+        fs, audio = read(file)
+        start, end = get_center_vowel(wave, file)
         segment_audio = get_segment_audio(audio, fs, start, end)
         feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
         o_ffts.append(feature)
     o_fft = np.mean(o_ffts, axis=0)
 
     i_ffts = []
-    for file in a_files:
-        wave = thinkdsp.read_wave(filename="../data/01MDA/a.wav")
-        fs, audio = read("../data/01MDA/a.wav")
-        start, end = get_center_vowel(wave)
+    for file in i_files:
+        wave = thinkdsp.read_wave(filename=file)
+        fs, audio = read(file)
+        start, end = get_center_vowel(wave, file)
         segment_audio = get_segment_audio(audio, fs, start, end)
         feature = get_fft_of_segment_audio(segment_audio, fs, n_size=512)
         i_ffts.append(feature)
@@ -122,3 +122,18 @@ if __name__ == "__main__":
     print(o_fft.shape)
     print(a_fft.shape)
     print(i_fft.shape)
+
+    with open("u_fft.npy", "wb") as f:
+        np.save(f, u_fft)
+    with open("e_fft.npy", "wb") as f:
+        np.save(f, e_fft)
+    with open("o_fft.npy", "wb") as f:
+        np.save(f, o_fft)
+    with open("a_fft.npy", "wb") as f:
+        np.save(f, a_fft)
+    with open("i_fft.npy", "wb") as f:
+        np.save(f, i_fft)
+
+
+if __name__ == "__main__":
+    save_fft_of_train_data()
