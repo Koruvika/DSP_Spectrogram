@@ -3,3 +3,4 @@
 /data/*
 !/data/.gitkeep
 !/data/README.md
+/src/__pycache__/*
