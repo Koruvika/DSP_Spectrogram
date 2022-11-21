@@ -29,7 +29,7 @@ def show_spectrogram_thinkdsp(path="../data/01MDA/a.wav"):
 
 
 if __name__ == "__main__":
-    fs, audio = read("../data/01MDA/a.wav")
+    fs, audio = read("../data/train/01MDA/a.wav")
 
     # spectrogram in scipy
     # show_spectrogram_scipy()
