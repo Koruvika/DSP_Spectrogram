@@ -17,6 +17,8 @@ e_fft = np.load("e_fft.npy")
 i_fft = np.load("i_fft.npy")
 o_fft = np.load("o_fft.npy")
 
+f = open("result256.txt", "a")
+
 
 def get_center_vowel(wave, file):
     n, a = 9, 1
@@ -42,23 +44,23 @@ def get_segment_audio(audio, fs, start, end):
     return segment_audio
 
 
-def get_fft_of_segment_audio(segment_audio, fs, n_size=2048):
-    N_FRAME_ON_10MS = int(fs * 0.01)
-    N_FRAME_ON_20MS = int(fs * 0.02)
-    N_FRAME_ON_30MS = int(fs * 0.03)
+def get_fft_of_segment_audio(segment_audio, fs, n_size=256):
+    N_SAMPLE_ON_10MS = int(fs * 0.01)
+    N_SAMPLE_ON_20MS = int(fs * 0.02)
+    N_SAMPLE_ON_30MS = int(fs * 0.03)
 
     n = segment_audio.shape[0]
-    k = int(n / N_FRAME_ON_20MS)
+    k = int(n / N_SAMPLE_ON_20MS)
 
     s = 0
-    e = N_FRAME_ON_30MS
+    e = N_SAMPLE_ON_30MS
 
     ffts = []
     while e < n:
         feature = fft.fft(segment_audio[s: e], n_size)
         ffts.append(feature)
-        s += N_FRAME_ON_20MS
-        e += N_FRAME_ON_20MS
+        s += N_SAMPLE_ON_20MS
+        e += N_SAMPLE_ON_20MS
 
     # ffts = []
     # for i in range(k):
@@ -207,6 +209,8 @@ def inference(testfile):
 
     label = testfile.split(".")[-2][-1]
 
+    f.write(f"{testfile} {get_vowel_predict(predict)} {label}\n")
+
     return get_vowel_predict(predict), label
 
 
@@ -214,13 +218,13 @@ if __name__ == "__main__":
     # u_fft, e_fft, o_fft, a_fft, i_fft = save_fft_of_train_data()
 
     vowel_files = []
-
     folders = os.listdir("../data/test")
     for folder in folders:
         files = os.listdir("../data/test/" + folder)
         for file in files:
             vowel_files.append("../data/test/" + folder + "/" + file)
 
+    # predict
     predict_results = []
     label_results = []
     for file in vowel_files:
@@ -228,10 +232,8 @@ if __name__ == "__main__":
         predict_results.append(predict)
         label_results.append(label)
 
-    # print(vowel_files)
-    conf = confusion_matrix(label_results, predict_results, labels=["u", "e", "o", "a", "i"])
-
     # show confusion matrix
+    conf = confusion_matrix(label_results, predict_results, labels=["u", "e", "o", "a", "i"])
     alphabets = ['u', 'e', 'o', 'a', 'i']
     figure = plt.figure()
     axes = figure.add_subplot(111)
@@ -242,3 +244,5 @@ if __name__ == "__main__":
     axes.set_xticklabels([''] + alphabets)
     axes.set_yticklabels([''] + alphabets)
     plt.show()
+
+    f.close()
