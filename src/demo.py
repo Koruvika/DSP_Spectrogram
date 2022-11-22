@@ -7,7 +7,7 @@ import numpy as np
 from thinkdsp import Spectrogram, read_wave, decorate
 
 
-def show_spectrogram_scipy(path="../data/01MDA/a.wav"):
+def show_spectrogram_scipy(path="../data/train/01MDA/a.wav"):
     fs, audio = read(path)
 
     # spectrogram in scipy
@@ -18,12 +18,12 @@ def show_spectrogram_scipy(path="../data/01MDA/a.wav"):
     plt.show()
 
 
-def show_spectrogram_thinkdsp(path="../data/01MDA/a.wav"):
+def show_spectrogram_thinkdsp(path="../data/train/01MDA/a.wav"):
     # spectrogram in thinkdsp
     waves = read_wave(path)
     waves.normalize()
     gram = waves.make_spectrogram(seg_length=int(fs * 0.005))
-    gram.plot(high=3000)
+    gram.plot(high=8000)
     decorate(xlabel='Time (s)', ylabel='Frequency (Hz)')
     plt.show()
 

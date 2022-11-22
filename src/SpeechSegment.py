@@ -74,6 +74,7 @@ def histogram_based_method(st_energy, user_defined_value, pos_1, pos_2):
 
     max1 = x[indexes[pos_1]]
     max2 = x[indexes[pos_2]]
+
     T = np.float64(w * max1 + max2) / np.float64(w + 1)
     return T
 
@@ -115,7 +116,6 @@ def silence_discrimination(signal, sampling_rate, st_win=0.020, st_step=0.020):
     st_energy = st_feats[1, :]
 
     ste_threshold = histogram_based_method(st_energy[:], 0.3, 0, 1)
-
     seg_limits = segment_limits(st_energy[:], ste_threshold, st_step,
                                 round(np.float64(len(signal)) / (st_win * sampling_rate)))
     # Remove very small segments:
