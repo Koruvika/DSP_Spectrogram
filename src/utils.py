@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.spatial.distance
+
 from SpeechSegment import silence_discrimination
 from scipy.io.wavfile import read
 from scipy import fft
@@ -7,6 +9,8 @@ import scipy.signal as sig
 import thinkdsp
 import os
 from sklearn.metrics import confusion_matrix
+# import seaborn as sn
+
 
 f = open("result.txt", "a")
 
@@ -29,7 +33,7 @@ def get_segment_audio(audio, fs, start, end):
     return segment_audio
 
 
-def get_fft_of_segment_audio(segment_audio, fs, n_size=2048):
+def get_fft_of_segment_audio(segment_audio, fs, n_size=512):
     N_SAMPLE_ON_10MS = int(fs * 0.01)
     N_SAMPLE_ON_20MS = int(fs * 0.02)
     N_SAMPLE_ON_30MS = int(fs * 0.03)
@@ -43,6 +47,7 @@ def get_fft_of_segment_audio(segment_audio, fs, n_size=2048):
     while e < n:
         feature = fft.fft(segment_audio[s: e], n_size)
         feature = np.abs(feature)
+        # feature = feature / np.linalg.norm(feature)
         ffts.append(feature)
         s += N_SAMPLE_ON_20MS
         e += N_SAMPLE_ON_20MS
@@ -224,17 +229,26 @@ def inference_on_test(u_fft, e_fft, o_fft, a_fft, i_fft):
     plt.show()
 
 
-if __name__ == "__main__":
-    # train
-    save_fft_of_train_data()
+def calculate_distance_fft_kmeans(feature1, feature2):
+    return np.sum(np.abs(feature1 - feature2), axis=0) / feature2.shape[0]
 
-    # read training fft
-    a_fft = np.load("a_fft.npy")
-    u_fft = np.load("u_fft.npy")
-    e_fft = np.load("e_fft.npy")
-    i_fft = np.load("i_fft.npy")
-    o_fft = np.load("o_fft.npy")
 
-    # inference
-    inference_on_test(u_fft, e_fft, o_fft, a_fft, i_fft)
+def inference_fft_kmeans(testfile, u_center, e_center, o_center, a_center, i_center):
+    wave = thinkdsp.read_wave(filename=testfile)
+    start, end = get_center_vowel(wave)
+    segment_audio = get_segment_audio(wave.ys, wave.framerate, start, end)
+    feature = get_fft_of_segment_audio(segment_audio, wave.framerate)
+    a_distance = np.mean(np.linalg.norm(feature - a_center, axis=1))
+    u_distance = np.mean(np.linalg.norm(feature - u_center, axis=1))
+    i_distance = np.mean(np.linalg.norm(feature - i_center, axis=1))
+    e_distance = np.mean(np.linalg.norm(feature - e_center, axis=1))
+    o_distance = np.mean(np.linalg.norm(feature - o_center, axis=1))
 
+    # u: 0, e: 1, o: 2, a: 3, i: 4
+    distance = np.array([u_distance, e_distance, o_distance, a_distance, i_distance])
+
+    predict = np.argmin(distance)
+
+    label = testfile.split(".")[-2][-1]
+
+    return get_vowel_predict(predict), label

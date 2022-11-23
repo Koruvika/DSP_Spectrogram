@@ -39,15 +39,18 @@ def get_center_vowel(wave, file):
     #     print(start, end)
     return start, end
 
+
 def k_mean(data, K_cluster):
     codebook, dis = kmeans(data, K_cluster, seed=0)
     return codebook
+
 
 a_fft_km=k_mean(a_fft, 5)
 u_fft_km=k_mean(u_fft, 5)
 e_fft_km=k_mean(e_fft, 5)
 i_fft_km=k_mean(i_fft, 5)
 o_fft_km=k_mean(o_fft, 5)
+
 
 def get_segment_audio(audio, fs, start, end):
     start_frame = int(start * fs)
@@ -183,7 +186,6 @@ def save_fft_of_train_data():
         np.save(f, i_fft)
 
     return u_fft, e_fft, o_fft, a_fft, i_fft
-
 
 
 def calculate_distance_fft(feature1, feature2):

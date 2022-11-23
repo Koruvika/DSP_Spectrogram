@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.fft
 import librosa
-from scipy.cluster.vq import vq, kmeans, whiten
-
+from sklearn.cluster import KMeans
 from SpeechSegment import silence_discrimination
 from scipy.io.wavfile import read
 from scipy import fft
@@ -13,6 +12,9 @@ import thinkdsp
 from sklearn.metrics import confusion_matrix
 import os
 
+K_CLUSTER=5
+
+np.random.seed(0)
 
 a_mfcc = np.load("a_mfcc.npy")
 u_mfcc = np.load("u_mfcc.npy")
@@ -20,7 +22,7 @@ e_mfcc = np.load("e_mfcc.npy")
 i_mfcc = np.load("i_mfcc.npy")
 o_mfcc = np.load("o_mfcc.npy")
 
-
+#%%
 def get_center_vowel(wave, file):
     n, a = 9, 1
     b = [1.0 / n] * n
@@ -40,26 +42,32 @@ def get_segment_audio(audio, fs, start, end):
     return segment_audio
 
 
-def get_mfcc(filename):
-    n_mfcc = 26
+def get_mfcc(filename, N_MFCC):
     wave = thinkdsp.read_wave(filename=filename)
     fs, audio = read(filename)
     start, end = get_center_vowel(wave, filename)
     segment_audio = get_segment_audio(audio, fs, start, end)
-    mfcc = librosa.feature.mfcc(y=segment_audio.astype('float64'), sr=fs, n_mfcc=n_mfcc, hop_length=len(segment_audio)//29)
-    return mfcc.reshape(n_mfcc*30)
+    mfcc = librosa.feature.mfcc(y=segment_audio.astype('float64'), sr=fs, n_mfcc=N_MFCC, hop_length=len(segment_audio)//29)
+    return mfcc.reshape(N_MFCC*30)
 
 
-def k_mean(data, K_cluster):
-    whitened = whiten(data)
-    codebook, dis = kmeans(whitened, K_cluster, seed=0)
+def k_mean(data, K_CLUSTER):
+    kmeans = KMeans(init="k-means++", n_clusters=K_CLUSTER).fit(data)
+    codebook = kmeans.cluster_centers_
     return codebook
 
 
-def save_mfcc_and_train_data():
+a_mfcc_km = k_mean(a_mfcc, K_CLUSTER)
+u_mfcc_km = k_mean(u_mfcc, K_CLUSTER)
+i_mfcc_km = k_mean(i_mfcc, K_CLUSTER)
+e_mfcc_km = k_mean(e_mfcc, K_CLUSTER)
+o_mfcc_km = k_mean(o_mfcc, K_CLUSTER)
+
+
+def save_mfcc_and_train_data(N_MFCC):
     vowel_files = []
 
-    folders = os.listdir("../data/train")
+    folders = os.listdir("../data/train")[1:-1]
     for folder in folders:
         files = os.listdir("../data/train/" + folder)
         for file in files:
@@ -73,28 +81,28 @@ def save_mfcc_and_train_data():
 
     a_mfcc = []
     for file in a_files:
-        a_mfcc.append(get_mfcc(file))
+        a_mfcc.append(get_mfcc(file, N_MFCC))
     # a_mfcc=np.hstack(a_mfcc).reshape(-1, 13, 20)
     a_mfcc=np.array(a_mfcc)
 
     u_mfcc = []
     for file in u_files:
-        u_mfcc.append(get_mfcc(file))
+        u_mfcc.append(get_mfcc(file, N_MFCC))
     u_mfcc=np.array(u_mfcc)
     
     e_mfcc = []
     for file in e_files:
-        e_mfcc.append(get_mfcc(file))
+        e_mfcc.append(get_mfcc(file, N_MFCC))
     e_mfcc=np.array(e_mfcc)
 
     o_mfcc = []
     for file in o_files:
-        o_mfcc.append(get_mfcc(file))
+        o_mfcc.append(get_mfcc(file, N_MFCC))
     o_mfcc=np.array(o_mfcc)
 
     i_mfcc = []
     for file in i_files:
-        i_mfcc.append(get_mfcc(file))
+        i_mfcc.append(get_mfcc(file, N_MFCC))
     i_mfcc=np.array(i_mfcc)
 
     print(u_mfcc.shape)
@@ -132,14 +140,19 @@ def calculate_distance_mfcc(feature1, feature2):
     return np.sum(np.abs(feature1 - feature2)) / feature2.shape[0]
 
  
-def inference(testfile, K_cluster):
-    feature = get_mfcc(testfile)
-
-    a_distance = calculate_distance_mfcc(feature, k_mean(a_mfcc, K_cluster))
-    u_distance = calculate_distance_mfcc(feature, k_mean(u_mfcc, K_cluster))
-    i_distance = calculate_distance_mfcc(feature, k_mean(i_mfcc, K_cluster))
-    e_distance = calculate_distance_mfcc(feature, k_mean(e_mfcc, K_cluster))
-    o_distance = calculate_distance_mfcc(feature, k_mean(o_mfcc, K_cluster))
+def inference(testfile, N_MFCC):
+    feature = get_mfcc(testfile, N_MFCC)
+    a_distance = calculate_distance_mfcc(feature, a_mfcc)
+    u_distance = calculate_distance_mfcc(feature, u_mfcc)
+    i_distance = calculate_distance_mfcc(feature, i_mfcc)
+    e_distance = calculate_distance_mfcc(feature, e_mfcc)
+    o_distance = calculate_distance_mfcc(feature, o_mfcc)
+    
+    # a_distance = calculate_distance_mfcc(feature, a_mfcc_km)
+    # u_distance = calculate_distance_mfcc(feature, u_mfcc_km)
+    # i_distance = calculate_distance_mfcc(feature, i_mfcc_km)
+    # e_distance = calculate_distance_mfcc(feature, e_mfcc_km)
+    # o_distance = calculate_distance_mfcc(feature, o_mfcc_km)
 
     # u: 0, e: 1, o: 2, a: 3, i: 4
     distance = np.array([u_distance, e_distance, o_distance, a_distance, i_distance])
@@ -150,26 +163,27 @@ def inference(testfile, K_cluster):
 
     return get_vowel_predict(predict), label
     
-
-if __name__ == "__main__":
+#%%
+if __name__=="__main__":
     # save_mfcc_and_train_data()
-
+    # save_mfcc_and_train_data(13)
     vowel_files = []
+
     folders = os.listdir("../data/test")
     for folder in folders:
         files = os.listdir("../data/test/" + folder)
         for file in files:
             vowel_files.append("../data/test/" + folder + "/" + file)
-
+    
     predict_results = []
     label_results = []
     for file in vowel_files:
-        predict, label = inference(file, 5)
+        predict, label = inference(file,N_MFCC=13)
         predict_results.append(predict)
         label_results.append(label)
-
+        
     conf = confusion_matrix(label_results, predict_results, labels=["u", "e", "o", "a", "i"])
-
+    
     alphabets = ['u', 'e', 'o', 'a', 'i']
     figure = plt.figure()
     axes = figure.add_subplot(111)
@@ -180,10 +194,11 @@ if __name__ == "__main__":
     axes.set_xticklabels([''] + alphabets)
     axes.set_yticklabels([''] + alphabets)
     plt.show()
+    print(f'Accuracy: {np.trace(conf)/np.sum(conf)}')
     
     
     
     
 # %%
-# save_mfcc_and_train_data()
+save_mfcc_and_train_data(13)
 # %%
