@@ -16,11 +16,11 @@ K_CLUSTER=5
 
 np.random.seed(0)
 
-a_mfcc = np.load("a_mfcc.npy")
-u_mfcc = np.load("u_mfcc.npy")
-e_mfcc = np.load("e_mfcc.npy")
-i_mfcc = np.load("i_mfcc.npy")
-o_mfcc = np.load("o_mfcc.npy")
+a_mfcc = np.load("a_mfcc.npy", allow_pickle=True)
+u_mfcc = np.load("u_mfcc.npy", allow_pickle=True)
+e_mfcc = np.load("e_mfcc.npy", allow_pickle=True)
+i_mfcc = np.load("i_mfcc.npy", allow_pickle=True)
+o_mfcc = np.load("o_mfcc.npy", allow_pickle=True)
 
 #%%
 def get_center_vowel(wave, file):
@@ -47,8 +47,10 @@ def get_mfcc(filename, N_MFCC):
     fs, audio = read(filename)
     start, end = get_center_vowel(wave, filename)
     segment_audio = get_segment_audio(audio, fs, start, end)
-    mfcc = librosa.feature.mfcc(y=segment_audio.astype('float64'), sr=fs, n_mfcc=N_MFCC, hop_length=len(segment_audio)//29)
-    return mfcc.reshape(N_MFCC*30)
+    mfcc = librosa.feature.mfcc(y=segment_audio.astype('float64'), sr=fs, n_mfcc=N_MFCC, n_fft=512)
+    feature=np.sum(mfcc, axis=1)
+    feature_norm=(feature-np.mean(feature))/np.std(feature)
+    return feature_norm
 
 
 def k_mean(data, K_CLUSTER):
@@ -72,6 +74,12 @@ def save_mfcc_and_train_data(N_MFCC):
         files = os.listdir("../data/train/" + folder)
         for file in files:
             vowel_files.append("../data/train/" + folder + "/" + file)
+            
+    folders = os.listdir("../data/test")[1:-1]
+    for folder in folders:
+        files = os.listdir("../data/test/" + folder)
+        for file in files:
+            vowel_files.append("../data/test/" + folder + "/" + file)
 
     a_files = [file for file in vowel_files if file.split(".")[-2][-1] == "a"]
     u_files = [file for file in vowel_files if file.split(".")[-2][-1] == "u"]
@@ -82,6 +90,7 @@ def save_mfcc_and_train_data(N_MFCC):
     a_mfcc = []
     for file in a_files:
         a_mfcc.append(get_mfcc(file, N_MFCC))
+        
     # a_mfcc=np.hstack(a_mfcc).reshape(-1, 13, 20)
     a_mfcc=np.array(a_mfcc)
 
@@ -166,7 +175,7 @@ def inference(testfile, N_MFCC):
 #%%
 if __name__=="__main__":
     # save_mfcc_and_train_data()
-    # save_mfcc_and_train_data(13)
+    save_mfcc_and_train_data(13)
     vowel_files = []
 
     folders = os.listdir("../data/test")
